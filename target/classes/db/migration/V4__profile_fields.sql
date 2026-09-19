@@ -1,6 +1,0 @@
--- TripMate V4: profile fields (city + travel preferences)
-ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS travel_style VARCHAR(30);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS favorite_places TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS vehicle VARCHAR(30);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS budget_type VARCHAR(20);
