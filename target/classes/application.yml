@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: tripmate-backend
+  profiles:
+    active: dev
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+
+tripmate:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-change-me-min-32-chars-long!!}
+    access-ttl-minutes: 15
+    refresh-ttl-days: 7
+  config:
+    master-key: ${CONFIG_MASTER_KEY:dev-master-key}
+    cache-minutes: 5
+
+logging:
+  level:
+    com.tripmate: INFO
+    org.hibernate.SQL: WARN
