@@ -82,6 +82,23 @@ public class TripController {
         return ApiResponse.ok(t);
     }
 
+    /** Public trip info: safe to show non-members (for join / not-member card). */
+    @GetMapping("/{id}/info")
+    public ApiResponse<Map<String, Object>> publicInfo(@PathVariable Long id) {
+        Trip t = trips.findById(id).orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("id", t.getId());
+        out.put("tripName", t.getTripName());
+        out.put("startName", t.getStartName());
+        out.put("destName", t.getDestName());
+        out.put("startDate", t.getStartDate());
+        out.put("endDate", t.getEndDate());
+        out.put("daysCount", t.getDaysCount());
+        out.put("inviteCode", t.getInviteCode());
+        out.put("memberCount", members.findByTripId(t.getId()).size());
+        return ApiResponse.ok(out);
+    }
+
     /** Public invite preview: limited fields, safe to show before login. */
     @GetMapping("/by-code/{code}")
     public ApiResponse<Map<String, Object>> byCode(@PathVariable String code) {
