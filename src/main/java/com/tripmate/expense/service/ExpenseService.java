@@ -478,16 +478,23 @@ public class ExpenseService {
         LocalDate monthStart = LocalDate.now().withDayOfMonth(1);
         double monthPaid = 0;
         double totalPaid = 0;
+        Map<String, Double> monthByCategory = new LinkedHashMap<>();
         List<Map<String, Object>> recent = new ArrayList<>();
         Map<Long, String> tripNames = new HashMap<>();
         for (TripExpense e : mine) {
             double a = e.getAmount() == null ? 0 : e.getAmount();
             totalPaid += a;
+            boolean inMonth = false;
             if (e.getExpenseDate() != null && !e.getExpenseDate().isBefore(monthStart)) {
                 monthPaid += a;
+                inMonth = true;
             } else if (e.getExpenseDate() == null && e.getCreatedAt() != null
                     && !e.getCreatedAt().toLocalDate().isBefore(monthStart)) {
                 monthPaid += a;
+                inMonth = true;
+            }
+            if (inMonth) {
+                monthByCategory.merge(e.getCategory(), a, Double::sum);
             }
             if (recent.size() < 8) {
                 String tn = tripNames.computeIfAbsent(e.getTripId(),
@@ -506,6 +513,12 @@ public class ExpenseService {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("monthPaid", round(monthPaid));
         out.put("totalPaid", round(totalPaid));
+        List<Map<String, Object>> catOut = new ArrayList<>();
+        monthByCategory.entrySet().stream()
+                .sorted((x, y) -> Double.compare(y.getValue(), x.getValue()))
+                .forEach(en -> catOut.add(Map.of(
+                        "category", en.getKey(), "amount", round(en.getValue()))));
+        out.put("monthByCategory", catOut);
         out.put("recent", recent);
         return out;
     }
