@@ -4,6 +4,8 @@ import com.tripmate.common.dto.ApiResponse;
 import com.tripmate.common.exception.BadRequestException;
 import com.tripmate.member.entity.TripMember;
 import com.tripmate.member.repository.TripMemberRepository;
+import com.tripmate.trip.service.ActivityService;
+import com.tripmate.user.entity.User;
 import com.tripmate.user.repository.UserRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ public class MemberController {
 
     private final TripMemberRepository members;
     private final UserRepository users;
+    private final ActivityService activity;
 
     private Long me() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -57,8 +60,25 @@ public class MemberController {
         if (!List.of("GOING", "MAYBE", "NOT_GOING").contains(req.getRsvp())) {
             throw new BadRequestException("Invalid RSVP");
         }
+        String old = m.getRsvp();
         m.setRsvp(req.getRsvp());
-        return ApiResponse.ok(members.save(m));
+        TripMember saved = members.save(m);
+        activity.log(id, me(), "RSVP_CHANGED", old + " → " + req.getRsvp());
+        return ApiResponse.ok(saved);
+    }
+
+    /** Trip activity timeline — who joined, when, what changed. */
+    @GetMapping("/api/trips/{id}/activity")
+    public ApiResponse<List<Map<String, Object>>> activity(@PathVariable Long id) {
+        if (!members.existsByTripIdAndUserId(id, me())) throw new BadRequestException("Not a trip member");
+        return ApiResponse.ok(activity.getTimeline(id));
+    }
+
+    /** Users who were ever part of this trip (for re-share). */
+    @GetMapping("/api/trips/{id}/past-members")
+    public ApiResponse<List<Map<String, Object>>> pastMembers(@PathVariable Long id) {
+        if (!members.existsByTripIdAndUserId(id, me())) throw new BadRequestException("Not a trip member");
+        return ApiResponse.ok(activity.getPastMembers(id));
     }
 
     @Data

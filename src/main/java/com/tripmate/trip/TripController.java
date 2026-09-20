@@ -9,6 +9,7 @@ import com.tripmate.member.entity.TripMember;
 import com.tripmate.member.repository.TripMemberRepository;
 import com.tripmate.trip.entity.Trip;
 import com.tripmate.trip.repository.TripRepository;
+import com.tripmate.trip.service.ActivityService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -31,6 +32,7 @@ public class TripController {
     private final TripRepository trips;
     private final TripMemberRepository members;
     private final ConfigService config;
+    private final ActivityService activity;
 
     private Long me() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -66,6 +68,7 @@ public class TripController {
         owner.setRole("OWNER");
         owner.setRsvp("GOING");
         members.save(owner);
+        activity.log(saved.getId(), me(), "CREATED", "Trip created");
         return ApiResponse.ok("Trip created", saved);
     }
 
@@ -149,6 +152,7 @@ public class TripController {
             m.setRole("MEMBER");
             m.setRsvp("GOING");
             members.save(m);
+            activity.log(id, me(), "JOINED", "Joined via invite code");
         }
         return ApiResponse.ok("Joined", null);
     }
