@@ -1,0 +1,2 @@
+ALTER TABLE gallery_like ADD COLUMN IF NOT EXISTS remarks VARCHAR(150);
+ALTER TABLE gallery_permission ADD COLUMN IF NOT EXISTS remarks VARCHAR(150);
