@@ -165,6 +165,19 @@ public class TripController {
         return ApiResponse.ok("Finalized", trips.save(t));
     }
 
+    @PutMapping("/{id}")
+    public ApiResponse<Trip> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Trip t = trips.findById(id).orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
+        requireOwner(id);
+        if (body.containsKey("tripName")) t.setTripName((String) body.get("tripName"));
+        if (body.containsKey("startName")) t.setStartName((String) body.get("startName"));
+        if (body.containsKey("destName")) t.setDestName((String) body.get("destName"));
+        if (body.containsKey("startDate")) t.setStartDate(body.get("startDate") != null ? LocalDate.parse((String) body.get("startDate")) : null);
+        if (body.containsKey("endDate")) t.setEndDate(body.get("endDate") != null ? LocalDate.parse((String) body.get("endDate")) : null);
+        if (body.containsKey("daysCount")) t.setDaysCount(body.get("daysCount") != null ? Integer.parseInt(body.get("daysCount").toString()) : null);
+        return ApiResponse.ok("Updated", trips.save(t));
+    }
+
     @DeleteMapping("/{id}")
     public ApiResponse<?> delete(@PathVariable Long id) {
         Trip t = trips.findById(id).orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
