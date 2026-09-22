@@ -4,9 +4,12 @@ import com.tripmate.common.dto.ApiResponse;
 import com.tripmate.common.exception.BadRequestException;
 import com.tripmate.common.exception.ResourceNotFoundException;
 import com.tripmate.config.service.ConfigService;
+import com.tripmate.geo.GeoService;
 import com.tripmate.member.repository.TripMemberRepository;
 import com.tripmate.place.entity.Place;
 import com.tripmate.place.repository.PlaceRepository;
+import com.tripmate.trip.entity.Trip;
+import com.tripmate.trip.repository.TripRepository;
 import com.tripmate.vote.repository.PlaceVoteRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -24,6 +27,7 @@ public class PlaceController {
     private final PlaceRepository places;
     private final PlaceVoteRepository votes;
     private final TripMemberRepository members;
+    private final TripRepository trips;
     private final ConfigService config;
 
     private Long me() {
@@ -37,6 +41,8 @@ public class PlaceController {
         if (places.findByTripId(tripId).size() >= max) {
             throw new BadRequestException("Place limit reached (" + max + ")");
         }
+        checkPinInRange(req.getName(), req.getLatitude(), req.getLongitude());
+        checkPinNearTrip(tripId, req.getName(), req.getLatitude(), req.getLongitude());
         Place p = new Place();
         p.setTripId(tripId);
         p.setName(req.getName());
@@ -103,6 +109,42 @@ public class PlaceController {
 
     private void requireMember(Long tripId) {
         if (!members.existsByTripIdAndUserId(tripId, me())) throw new BadRequestException("Not a trip member");
+    }
+
+    /**
+     * Rejects impossible coordinates (out of range / non-finite). Guards
+     * against swapped or garbage lat/lng before anything is saved.
+     */
+    private static void checkPinInRange(String name, Double lat, Double lng) {
+        if (lat == null || lng == null) return;
+        if (!Double.isFinite(lat) || !Double.isFinite(lng)
+                || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            throw new BadRequestException(
+                    "Invalid coordinates for \"" + name + "\" — out of range");
+        }
+    }
+
+    /**
+     * Rejects pins implausibly far from the trip (wrong geocode pick, e.g. a
+     * same-name place on another continent). A pin passes when it is near
+     * the trip START or the DESTINATION — so Delhi→London style trips keep
+     * working. Skipped when the trip has no reference coords yet. Disable
+     * by setting geo.max-pin-distance-km <= 0.
+     */
+    private void checkPinNearTrip(Long tripId, String name, Double lat, Double lng) {
+        if (lat == null || lng == null) return;
+        int maxKm = config.getInt("geo.max-pin-distance-km", 3000);
+        if (maxKm <= 0) return;
+        Trip t = trips.findById(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
+        Double dStart = GeoService.distanceKm(lat, lng, t.getStartLat(), t.getStartLng());
+        Double dDest = GeoService.distanceKm(lat, lng, t.getDestLat(), t.getDestLng());
+        if (dStart == null && dDest == null) return;
+        if ((dStart != null && dStart <= maxKm) || (dDest != null && dDest <= maxKm)) return;
+        double nearest = dStart != null && (dDest == null || dStart <= dDest) ? dStart : dDest;
+        throw new BadRequestException("\"" + name + "\" is ~" + Math.round(nearest)
+                + " km from both trip start and destination — looks like a wrong pin (limit "
+                + maxKm + " km). Please pick the correct location.");
     }
 
     @Data

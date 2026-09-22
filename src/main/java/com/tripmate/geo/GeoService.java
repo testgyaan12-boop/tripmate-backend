@@ -106,4 +106,15 @@ public class GeoService {
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         return 2 * r * Math.asin(Math.sqrt(a));
     }
+
+    /**
+     * Public great-circle distance in km. Null-safe: returns null when any
+     * coordinate is missing or non-finite.
+     */
+    public static Double distanceKm(Double lat1, Double lng1, Double lat2, Double lng2) {
+        if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) return null;
+        if (!Double.isFinite(lat1) || !Double.isFinite(lng1)
+                || !Double.isFinite(lat2) || !Double.isFinite(lng2)) return null;
+        return haversineKm(lat1, lng1, lat2, lng2);
+    }
 }

@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -82,10 +81,7 @@ public class GalleryService {
         Set<Long> myLikedIds = new HashSet<>();
         if (!pageItems.isEmpty()) {
             List<Long> ids = pageItems.stream().map(GalleryItem::getId).toList();
-            myLikedIds = new HashSet<>(likes.findAll().stream()
-                    .filter(l -> ids.contains(l.getGalleryId()) && l.getUserId().equals(userId) && l.getIsDeleted() == 0)
-                    .map(GalleryLike::getGalleryId)
-                    .collect(Collectors.toSet()));
+            myLikedIds = new HashSet<>(likes.findLikedGalleryIds(ids, userId));
         }
         final Set<Long> finalLikedIds = myLikedIds;
 
@@ -105,11 +101,13 @@ public class GalleryService {
             return m;
         }).toList();
 
-        Object[] st = items.stats(tripId);
+        long photoCount = items.countPhotos(tripId);
+        long videoCount = items.countVideos(tripId);
+        long totalCount = items.countAll(tripId);
         Map<String, Object> meta = Map.of(
-                "photoCount", ((Number) st[0]).longValue(),
-                "videoCount", ((Number) st[1]).longValue(),
-                "totalCount", ((Number) st[2]).longValue(),
+                "photoCount", photoCount,
+                "videoCount", videoCount,
+                "totalCount", totalCount,
                 "hasMore", end < list.size()
         );
 
@@ -238,11 +236,10 @@ public class GalleryService {
 
     public Map<String, Object> getStats(Long tripId, Long userId) {
         requireMember(tripId, userId);
-        Object[] st = items.stats(tripId);
         return Map.of(
-                "photoCount", ((Number) st[0]).longValue(),
-                "videoCount", ((Number) st[1]).longValue(),
-                "totalCount", ((Number) st[2]).longValue()
+                "photoCount", items.countPhotos(tripId),
+                "videoCount", items.countVideos(tripId),
+                "totalCount", items.countAll(tripId)
         );
     }
 }

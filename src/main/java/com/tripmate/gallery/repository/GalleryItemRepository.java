@@ -25,8 +25,14 @@ public interface GalleryItemRepository extends JpaRepository<GalleryItem, Long> 
     @Query("SELECT g.userId, COUNT(g) FROM GalleryItem g WHERE g.tripId = :tripId AND g.isDeleted = 0 AND g.isActive = 1 GROUP BY g.userId ORDER BY COUNT(g) DESC")
     List<Object[]> countByUser(@Param("tripId") Long tripId);
 
-    @Query("SELECT COALESCE(SUM(CASE WHEN g.fileType = 'PHOTO' THEN 1 ELSE 0 END), 0), COALESCE(SUM(CASE WHEN g.fileType = 'VIDEO' THEN 1 ELSE 0 END), 0), COUNT(g) FROM GalleryItem g WHERE g.tripId = :tripId AND g.isDeleted = 0 AND g.isActive = 1")
-    Object[] stats(@Param("tripId") Long tripId);
+    @Query("SELECT COUNT(g) FROM GalleryItem g WHERE g.tripId = :tripId AND g.fileType = 'PHOTO' AND g.isDeleted = 0 AND g.isActive = 1")
+    long countPhotos(@Param("tripId") Long tripId);
+
+    @Query("SELECT COUNT(g) FROM GalleryItem g WHERE g.tripId = :tripId AND g.fileType = 'VIDEO' AND g.isDeleted = 0 AND g.isActive = 1")
+    long countVideos(@Param("tripId") Long tripId);
+
+    @Query("SELECT COUNT(g) FROM GalleryItem g WHERE g.tripId = :tripId AND g.isDeleted = 0 AND g.isActive = 1")
+    long countAll(@Param("tripId") Long tripId);
 
     @Query("SELECT g FROM GalleryItem g WHERE g.tripId = :tripId AND g.isDeleted = 0 AND g.isActive = 1 AND (LOWER(g.caption) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(g.locationName) LIKE LOWER(CONCAT('%',:q,'%'))) ORDER BY g.createdAt DESC")
     List<GalleryItem> search(@Param("tripId") Long tripId, @Param("q") String query);

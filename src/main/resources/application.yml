@@ -18,6 +18,10 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 server:
   port: 8080
@@ -30,6 +34,10 @@ tripmate:
   config:
     master-key: ${CONFIG_MASTER_KEY:dev-master-key}
     cache-minutes: 5
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:disjeejix}
+    api-key: ${CLOUDINARY_API_KEY:361641924281332}
+    api-secret: ${CLOUDINARY_API_SECRET:6gxRX7MqlWfDabRX3vnaQQBb8BQ}
 
 logging:
   level:

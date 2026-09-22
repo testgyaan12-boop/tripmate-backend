@@ -50,9 +50,11 @@ public class TripController {
         Trip t = new Trip();
         t.setTripName(req.getTripName());
         t.setStartName(req.getStartName());
+        checkTripPin("start", req.getStartLat(), req.getStartLng());
         t.setStartLat(req.getStartLat());
         t.setStartLng(req.getStartLng());
         t.setDestName(req.getDestName());
+        checkTripPin("destination", req.getDestLat(), req.getDestLng());
         t.setDestLat(req.getDestLat());
         t.setDestLng(req.getDestLng());
         t.setStartDate(req.getStartDate());
@@ -197,6 +199,15 @@ public class TripController {
         TripMember m = members.findByTripIdAndUserId(tripId, me())
                 .orElseThrow(() -> new BadRequestException("Not a trip member"));
         if (!"OWNER".equals(m.getRole())) throw new BadRequestException("Owner only");
+    }
+
+    /** Rejects impossible trip pins (out of range / non-finite). */
+    private static void checkTripPin(String which, Double lat, Double lng) {
+        if (lat == null || lng == null) return;
+        if (!Double.isFinite(lat) || !Double.isFinite(lng)
+                || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            throw new BadRequestException("Invalid " + which + " coordinates — out of range");
+        }
     }
 
     @Data

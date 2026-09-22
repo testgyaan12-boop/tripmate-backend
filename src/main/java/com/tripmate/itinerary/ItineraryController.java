@@ -150,6 +150,66 @@ public class ItineraryController {
         return out;
     }
 
+    @PostMapping
+    public ApiResponse<ItineraryItem> create(@PathVariable Long tripId,
+                                              @RequestBody ItineraryItem body) {
+        requireMember(tripId);
+        if (body.getTitle() == null || body.getTitle().isBlank()) {
+            throw new BadRequestException("Title is required");
+        }
+        int dayNo = Math.max(1, body.getDayNo() != null ? body.getDayNo() : 1);
+        int maxSort = 0;
+        for (ItineraryItem e : items.findByTripIdOrderByDayNoAscSortOrderAsc(tripId)) {
+            if (e.getDayNo() == dayNo && e.getSortOrder() != null && e.getSortOrder() >= maxSort) {
+                maxSort = e.getSortOrder() + 1;
+            }
+        }
+        ItineraryItem it = new ItineraryItem();
+        it.setTripId(tripId);
+        it.setDayNo(dayNo);
+        it.setPlaceId(body.getPlaceId());
+        it.setTitle(body.getTitle().trim());
+        it.setDistanceKm(body.getDistanceKm());
+        it.setDriveMins(body.getDriveMins());
+        it.setStayNotes(body.getStayNotes());
+        it.setStopsJson(body.getStopsJson());
+        it.setFoodNotes(body.getFoodNotes());
+        it.setSortOrder(maxSort);
+        return ApiResponse.ok("Created", items.save(it));
+    }
+
+    @PutMapping("/{itemId}")
+    public ApiResponse<ItineraryItem> update(@PathVariable Long tripId,
+                                              @PathVariable Long itemId,
+                                              @RequestBody ItineraryItem body) {
+        requireMember(tripId);
+        ItineraryItem it = items.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+        if (!it.getTripId().equals(tripId)) throw new BadRequestException("Item not in this trip");
+        if (body.getTitle() != null && !body.getTitle().isBlank()) it.setTitle(body.getTitle().trim());
+        if (body.getDayNo() != null) it.setDayNo(Math.max(1, body.getDayNo()));
+        if (body.getSortOrder() != null) it.setSortOrder(body.getSortOrder());
+        if (body.getPlaceId() != null) it.setPlaceId(body.getPlaceId());
+        if (body.getDistanceKm() != null) it.setDistanceKm(body.getDistanceKm());
+        if (body.getDriveMins() != null) it.setDriveMins(body.getDriveMins());
+        if (body.getStayNotes() != null) it.setStayNotes(body.getStayNotes());
+        if (body.getStopsJson() != null) it.setStopsJson(body.getStopsJson());
+        if (body.getFoodNotes() != null) it.setFoodNotes(body.getFoodNotes());
+        return ApiResponse.ok("Updated", items.save(it));
+    }
+
+    @DeleteMapping("/{itemId}")
+    public ApiResponse<Void> delete(@PathVariable Long tripId,
+                                     @PathVariable Long itemId) {
+        requireMember(tripId);
+        ItineraryItem it = items.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+        if (!it.getTripId().equals(tripId)) throw new BadRequestException("Item not in this trip");
+        it.softDelete();
+        items.save(it);
+        return ApiResponse.ok("Deleted", null);
+    }
+
     private void requireMember(Long tripId) {
         if (!members.existsByTripIdAndUserId(tripId, me())) throw new BadRequestException("Not a trip member");
     }
