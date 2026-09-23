@@ -4,6 +4,7 @@ import com.tripmate.common.dto.ApiResponse;
 import com.tripmate.common.exception.BadRequestException;
 import com.tripmate.common.exception.GoneException;
 import com.tripmate.common.exception.ResourceNotFoundException;
+import com.tripmate.billing.SubscriptionService;
 import com.tripmate.config.service.ConfigService;
 import com.tripmate.member.entity.TripMember;
 import com.tripmate.member.repository.TripMemberRepository;
@@ -33,6 +34,7 @@ public class TripController {
     private final TripMemberRepository members;
     private final ConfigService config;
     private final ActivityService activity;
+    private final SubscriptionService subs;
 
     private Long me() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -40,12 +42,12 @@ public class TripController {
 
     @PostMapping
     public ApiResponse<Trip> create(@Valid @RequestBody CreateTripReq req) {
-        int freeLimit = config.getInt("free.trip.limit", 2);
         int maxMembers = config.getInt("trip.max.members", 20);
         if (maxMembers < 1) throw new BadRequestException("Trip member limit misconfigured");
+        int tripLimit = subs.intLimit(me(), "TRIP_LIMIT", config.getInt("free.trip.limit", 3));
         long mine = trips.findByCreatedByUserId(me()).stream().filter(Trip::isAlive).count();
-        if (mine >= freeLimit) {
-            throw new BadRequestException("Free limit reached (" + mine + "/" + freeLimit + " trips used). Premium required.");
+        if (mine >= tripLimit) {
+            throw new BadRequestException("Trip limit reached (" + mine + "/" + tripLimit + " trips used). Upgrade to Pro for unlimited trips.");
         }
         Trip t = new Trip();
         t.setTripName(req.getTripName());
@@ -148,6 +150,7 @@ public class TripController {
             throw new BadRequestException("Invalid invite code");
         }
         if (!members.existsByTripIdAndUserId(id, me())) {
+            subs.checkMemberLimit(id, me());
             TripMember m = new TripMember();
             m.setTripId(id);
             m.setUserId(me());

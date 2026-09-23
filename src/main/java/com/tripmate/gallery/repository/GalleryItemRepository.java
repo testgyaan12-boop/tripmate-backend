@@ -36,4 +36,7 @@ public interface GalleryItemRepository extends JpaRepository<GalleryItem, Long> 
 
     @Query("SELECT g FROM GalleryItem g WHERE g.tripId = :tripId AND g.isDeleted = 0 AND g.isActive = 1 AND (LOWER(g.caption) LIKE LOWER(CONCAT('%',:q,'%')) OR LOWER(g.locationName) LIKE LOWER(CONCAT('%',:q,'%'))) ORDER BY g.createdAt DESC")
     List<GalleryItem> search(@Param("tripId") Long tripId, @Param("q") String query);
+
+    @Query("SELECT COALESCE(SUM(g.fileSizeBytes), 0) FROM GalleryItem g WHERE g.userId = :userId AND g.isDeleted = 0 AND g.isActive = 1")
+    long storageUsedByUser(@Param("userId") Long userId);
 }

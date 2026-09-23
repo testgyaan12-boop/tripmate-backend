@@ -41,6 +41,7 @@ public class ItineraryAiService {
     private final AiRouterService ai;
     private final GeoService geo;
     private final ObjectMapper objectMapper;
+    private final com.tripmate.billing.SubscriptionService subs;
 
     public record Quota(long used, long limit, long remaining) {
     }
@@ -51,13 +52,24 @@ public class ItineraryAiService {
         return new Quota(used, limit, Math.max(0, limit - used));
     }
 
+    /** Quota view for the client. Pro (AI_PLANNER) = unlimited. */
+    public Map<String, Object> quotaDto(Long tripId, Long userId) {
+        if (subs.hasFeature(userId, "AI_PLANNER")) {
+            long used = proposals.countByTripIdAndStatusIn(tripId, COUNTED);
+            return Map.of("used", used, "limit", -1, "remaining", -1, "unlimited", true);
+        }
+        Quota q = quota(tripId);
+        return Map.of("used", q.used(), "limit", q.limit(),
+                "remaining", q.remaining(), "unlimited", false);
+    }
+
     @SuppressWarnings("unchecked")
     public Map<String, Object> propose(Long tripId, Long userId, Map<String, Object> answers) {
         requireMember(tripId, userId);
         Trip trip = trips.findById(tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
         Quota q = quota(tripId);
-        if (q.remaining() <= 0) {
+        if (!subs.hasFeature(userId, "AI_PLANNER") && q.remaining() <= 0) {
             throw new BadRequestException(
                     "Free AI plans used (" + q.used() + "/" + q.limit() + " for this trip).");
         }

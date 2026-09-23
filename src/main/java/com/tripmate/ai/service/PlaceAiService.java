@@ -36,6 +36,7 @@ public class PlaceAiService {
     private final AiRouterService ai;
     private final GeoService geo;
     private final ObjectMapper objectMapper;
+    private final com.tripmate.billing.SubscriptionService subs;
 
     public record Quota(long used, long limit, long remaining) {
     }
@@ -46,6 +47,17 @@ public class PlaceAiService {
         return new Quota(used, limit, Math.max(0, limit - used));
     }
 
+    /** Quota view for the client. Pro (AI_PLANNER) = unlimited. */
+    public Map<String, Object> quotaDto(Long tripId, Long userId) {
+        if (subs.hasFeature(userId, "AI_PLANNER")) {
+            long used = suggestions.countByTripIdAndStatusIn(tripId, COUNTED);
+            return Map.of("used", used, "limit", -1, "remaining", -1, "unlimited", true);
+        }
+        Quota q = quota(tripId);
+        return Map.of("used", q.used(), "limit", q.limit(),
+                "remaining", q.remaining(), "unlimited", false);
+    }
+
     @SuppressWarnings("unchecked")
     public Map<String, Object> suggest(Long tripId, Long userId, Integer count,
                                        List<String> interests, Integer dayNo,
@@ -54,7 +66,7 @@ public class PlaceAiService {
         Trip trip = trips.findById(tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
         Quota q = quota(tripId);
-        if (q.remaining() <= 0) {
+        if (!subs.hasFeature(userId, "AI_PLANNER") && q.remaining() <= 0) {
             throw new BadRequestException(
                     "Free suggestions used (" + q.used() + "/" + q.limit() + " for this trip).");
         }

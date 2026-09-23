@@ -24,9 +24,7 @@ public class AiItineraryController {
 
     @GetMapping("/quota")
     public ApiResponse<Map<String, Object>> quota(@PathVariable Long tripId) {
-        Quota q = service.quota(tripId);
-        return ApiResponse.ok(Map.of(
-                "used", q.used(), "limit", q.limit(), "remaining", q.remaining()));
+        return ApiResponse.ok(service.quotaDto(tripId, me()));
     }
 
     @PostMapping("/propose")

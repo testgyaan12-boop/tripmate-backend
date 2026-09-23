@@ -1,6 +1,7 @@
 package com.tripmate.trip.service;
 
 import com.tripmate.common.exception.BadRequestException;
+import com.tripmate.billing.SubscriptionService;
 import com.tripmate.member.entity.TripMember;
 import com.tripmate.member.repository.TripMemberRepository;
 import com.tripmate.notification.entity.Notification;
@@ -27,6 +28,7 @@ public class InviteService {
     private final UserRepository users;
     private final NotificationRepository notifications;
     private final ActivityService activity;
+    private final SubscriptionService subs;
 
     /** All connected users (shared trip history) with profile info. */
     public List<Map<String, Object>> getConnections(Long userId) {
@@ -111,6 +113,7 @@ public class InviteService {
         invites.save(inv);
 
         if (!members.existsByTripIdAndUserId(inv.getTripId(), userId)) {
+            subs.checkMemberLimit(inv.getTripId(), userId);
             TripMember m = new TripMember();
             m.setTripId(inv.getTripId());
             m.setUserId(userId);

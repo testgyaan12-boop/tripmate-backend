@@ -40,6 +40,13 @@ public class GalleryController {
     public ApiResponse<GalleryItem> upload(
             @PathVariable Long tripId,
             @RequestBody Map<String, String> body) {
+        Long bytes = null;
+        try {
+            if (body.get("fileSizeBytes") != null) {
+                bytes = Long.parseLong(body.get("fileSizeBytes"));
+            }
+        } catch (NumberFormatException ignored) {
+        }
         return ApiResponse.ok(gallery.upload(
                 me(), tripId,
                 body.get("cloudinaryUrl"),
@@ -47,7 +54,8 @@ public class GalleryController {
                 body.get("fileType"),
                 body.get("caption"),
                 body.get("locationName"),
-                body.get("albumName")));
+                body.get("albumName"),
+                bytes));
     }
 
     @DeleteMapping("/{itemId}")

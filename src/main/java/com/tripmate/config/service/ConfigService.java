@@ -24,7 +24,8 @@ public class ConfigService {
             "map.tile.url", "map.attribution", "map.default.lat", "map.default.lng",
             "app.name", "app.env", "app.invite.base-url",
             "jwt.access.ttl.min", "jwt.refresh.ttl.days",
-            "trip.max.members", "trip.max.places");
+            "trip.max.members", "trip.max.places",
+            "RAZORPAY_KEY_ID");
 
     private final AppConfigRepository repo;
 

@@ -43,4 +43,7 @@ public class GalleryItem extends BaseEntity {
 
     @Column(name = "like_count", nullable = false)
     private Integer likeCount = 0;
+
+    @Column(name = "file_size_bytes", nullable = false)
+    private Long fileSizeBytes = 0L;
 }

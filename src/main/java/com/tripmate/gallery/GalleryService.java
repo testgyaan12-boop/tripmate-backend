@@ -27,6 +27,7 @@ public class GalleryService {
     private final GalleryPermissionRepository permissions;
     private final TripMemberRepository members;
     private final UserRepository users;
+    private final com.tripmate.billing.SubscriptionService subs;
 
     private void requireMember(Long tripId, Long userId) {
         if (!members.existsByTripIdAndUserId(tripId, userId)) {
@@ -46,8 +47,17 @@ public class GalleryService {
 
     @Transactional
     public GalleryItem upload(Long userId, Long tripId, String url, String thumb,
-                               String fileType, String caption, String location, String album) {
+                               String fileType, String caption, String location, String album,
+                               Long fileSizeBytes) {
         requireMember(tripId, userId);
+        long incoming = fileSizeBytes != null && fileSizeBytes > 0 ? fileSizeBytes : 0;
+        int quotaMb = subs.intLimit(userId, "STORAGE_MB", 500);
+        long quotaBytes = (long) quotaMb * 1024 * 1024;
+        long used = subs.storageUsedBytes(userId);
+        if (used + incoming > quotaBytes) {
+            throw new BadRequestException("Gallery storage full (" + used / 1024 / 1024
+                    + " MB of " + quotaMb + " MB used). Upgrade to Pro for more storage.");
+        }
         GalleryItem g = new GalleryItem();
         g.setTripId(tripId);
         g.setUserId(userId);
@@ -58,6 +68,7 @@ public class GalleryService {
         g.setLocationName(location);
         g.setAlbumName(album);
         g.setLikeCount(0);
+        g.setFileSizeBytes(incoming);
         return items.save(g);
     }
 
