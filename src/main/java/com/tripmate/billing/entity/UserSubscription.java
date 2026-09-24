@@ -20,8 +20,8 @@ public class UserSubscription extends BaseEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "plan_id", nullable = false)
-    private Long planId;
+    @Column(name = "subscription_id", nullable = false)
+    private Long subscriptionId;
 
     @Column(name = "payment_gateway", nullable = false, length = 20)
     private String paymentGateway = "RAZORPAY";

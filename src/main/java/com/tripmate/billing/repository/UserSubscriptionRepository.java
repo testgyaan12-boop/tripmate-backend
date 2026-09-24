@@ -9,8 +9,8 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
 
     Optional<UserSubscription> findFirstByUserIdAndStatusOrderByEndDateDesc(Long userId, String status);
 
-    Optional<UserSubscription> findFirstByUserIdAndPlanIdAndStatusOrderByEndDateDesc(
-            Long userId, Long planId, String status);
+    Optional<UserSubscription> findFirstByUserIdAndSubscriptionIdAndStatusOrderByEndDateDesc(
+            Long userId, Long subscriptionId, String status);
 
     Optional<UserSubscription> findByGatewaySubscriptionId(String gatewaySubscriptionId);
 }

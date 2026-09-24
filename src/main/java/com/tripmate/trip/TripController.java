@@ -151,6 +151,7 @@ public class TripController {
         }
         if (!members.existsByTripIdAndUserId(id, me())) {
             subs.checkMemberLimit(id, me());
+            subs.checkJoinLimit(me());
             TripMember m = new TripMember();
             m.setTripId(id);
             m.setUserId(me());

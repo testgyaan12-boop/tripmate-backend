@@ -114,6 +114,7 @@ public class InviteService {
 
         if (!members.existsByTripIdAndUserId(inv.getTripId(), userId)) {
             subs.checkMemberLimit(inv.getTripId(), userId);
+            subs.checkJoinLimit(userId);
             TripMember m = new TripMember();
             m.setTripId(inv.getTripId());
             m.setUserId(userId);

@@ -6,18 +6,24 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
 
+/**
+ * Single subscription/plan table. Pricing, description and feature limits
+ * all live here — features inside the details JSON:
+ * {"description":"...","features":{"TRIP_LIMIT":"3",...}}.
+ * Price/limit changes = SQL UPDATE, no deploy.
+ */
 @Getter
 @Setter
 @Entity
 @SQLRestriction("is_deleted = 0 AND is_active = 1")
-@Table(name = "plan_master")
-public class PlanMaster extends BaseEntity {
+@Table(name = "subscription")
+public class Subscription extends BaseEntity {
 
-    @Column(name = "plan_code", nullable = false, unique = true, length = 20)
-    private String planCode;
+    @Column(name = "code", nullable = false, unique = true, length = 20)
+    private String code;
 
-    @Column(name = "plan_name", nullable = false, length = 50)
-    private String planName;
+    @Column(name = "name", nullable = false, length = 50)
+    private String name;
 
     @Column(name = "monthly_price_paise", nullable = false)
     private Integer monthlyPricePaise = 0;
@@ -30,4 +36,7 @@ public class PlanMaster extends BaseEntity {
 
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
+
+    @Column(name = "details", nullable = false, columnDefinition = "jsonb")
+    private String details = "{\"features\":{}}";
 }

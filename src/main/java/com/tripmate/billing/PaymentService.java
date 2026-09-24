@@ -1,7 +1,7 @@
 package com.tripmate.billing;
 
 import com.tripmate.billing.entity.PaymentTransaction;
-import com.tripmate.billing.entity.PlanMaster;
+import com.tripmate.billing.entity.Subscription;
 import com.tripmate.billing.gateway.PaymentGateway;
 import com.tripmate.billing.repository.PaymentTransactionRepository;
 import com.tripmate.common.exception.BadRequestException;
@@ -27,15 +27,15 @@ public class PaymentService {
     private final PaymentTransactionRepository txns;
 
     public Map<String, Object> createOrder(Long userId, String planCode, String billing) {
-        PlanMaster plan = subs.planOrThrow(planCode);
-        if ("FREE".equals(plan.getPlanCode())) {
+        Subscription plan = subs.planOrThrow(planCode);
+        if ("FREE".equals(plan.getCode())) {
             throw new BadRequestException("Free plan needs no payment");
         }
         String cycle = "YEARLY".equalsIgnoreCase(billing) ? "YEARLY" : "MONTHLY";
         long amount = "YEARLY".equals(cycle)
                 ? plan.getYearlyPricePaise() : plan.getMonthlyPricePaise();
         if (amount <= 0) throw new BadRequestException("Plan price not configured");
-        String receipt = "tm_" + userId + "_" + plan.getPlanCode().toLowerCase()
+        String receipt = "tm_" + userId + "_" + plan.getCode().toLowerCase()
                 + "_" + cycle.toLowerCase() + "_" + System.currentTimeMillis();
         Map<String, Object> order = gateway.createOrder(
                 amount, plan.getCurrency() != null ? plan.getCurrency() : "INR", receipt);
@@ -45,11 +45,11 @@ public class PaymentService {
         t.setGatewayOrderId((String) order.get("orderId"));
         t.setAmountPaise(((Number) order.get("amount")).intValue());
         t.setCurrency((String) order.get("currency"));
-        t.setPlanCode(plan.getPlanCode());
+        t.setPlanCode(plan.getCode());
         t.setBillingCycle(cycle);
         t.setStatus("CREATED");
         txns.save(t);
-        order.put("planCode", plan.getPlanCode());
+        order.put("planCode", plan.getCode());
         order.put("billing", cycle);
         return order;
     }
