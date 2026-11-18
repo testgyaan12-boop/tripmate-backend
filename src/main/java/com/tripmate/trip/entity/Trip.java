@@ -52,7 +52,7 @@ public class Trip extends BaseEntity {
     private Long createdByUserId;
 
     @Column(name = "status", nullable = false, length = 20)
-    private String status = "PLANNING";
+    private String status = "AUTO";
 
     @Column(name = "invite_code", unique = true, length = 12)
     private String inviteCode;

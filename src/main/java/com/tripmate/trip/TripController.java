@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -63,7 +64,7 @@ public class TripController {
         t.setEndDate(req.getEndDate());
         t.setDaysCount(req.getDaysCount());
         t.setCreatedByUserId(me());
-        t.setStatus("PLANNING");
+        t.setStatus("AUTO");
         t.setInviteCode(UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase());
         Trip saved = trips.save(t);
         TripMember owner = new TripMember();
@@ -169,6 +170,38 @@ public class TripController {
         requireOwner(id);
         t.setStatus("FINALIZED");
         return ApiResponse.ok("Finalized", trips.save(t));
+    }
+
+    private static final Set<String> ALLOWED_STATUSES = Set.of(
+            "AUTO", "PLANNING", "UPCOMING", "ONGOING", "COMPLETED", "FINALIZED");
+
+    @PatchMapping("/{id}/status")
+    public ApiResponse<Trip> updateStatus(@PathVariable Long id,
+                                          @RequestBody Map<String, Object> body) {
+        Trip t = trips.findById(id).orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
+        requireOwner(id);
+        String status = body.get("status") == null
+                ? "" : body.get("status").toString().trim().toUpperCase();
+        if (!ALLOWED_STATUSES.contains(status)) {
+            throw new BadRequestException("Invalid status — use AUTO, PLANNING, UPCOMING, ONGOING or COMPLETED");
+        }
+        t.setStatus(status);
+        Trip saved = trips.save(t);
+        activity.log(id, me(), "STATUS_CHANGED",
+                "Marked as " + statusLabel(status));
+        return ApiResponse.ok("Status updated", saved);
+    }
+
+    private static String statusLabel(String status) {
+        switch (status) {
+            case "AUTO": return "Automatic";
+            case "PLANNING": return "Planning";
+            case "UPCOMING": return "Upcoming";
+            case "ONGOING": return "Ongoing";
+            case "COMPLETED":
+            case "FINALIZED": return "Completed";
+            default: return status;
+        }
     }
 
     @PutMapping("/{id}")
